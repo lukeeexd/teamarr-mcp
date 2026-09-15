@@ -94,13 +94,11 @@ same httpx client.
 | `update_settings(block, changes, replace=False)` | `GET /api/v1/settings/{block}`, shallow-merge `changes` over it, `PUT`. Drops any field whose current value is the mask `********` unless `changes` sets it. `replace=True` PUTs `changes` verbatim. Returns the PUT response. `block` is validated against the settings paths present in the loaded spec. |
 | `set_template_filler(field, text, template_ids=None)` | For each event template (all, or the given ids) GET, set `field` (pregame/postgame filler fields as named in the template schema), PUT if changed. Returns changed/unchanged/failed ids. Description documents `{relative_day_title}` / `{relative_day}` vs `{game_day}`. |
 | `get_event_channels_summary()` | `/api/v1/channels/managed` joined with `/api/v1/groups` and `/api/v1/templates`: number, name, event, league, group display name, template name, group stream count, sync status. |
-| `find_unmatched_streams(group_id=None)` | For enabled event groups, list source streams that produced no event channel, with the group's current regex settings, to drive regex tuning. Uses the group stream/match endpoints available in the spec. |
-| `list_premium_gated_subscriptions()` | Subscribed leagues flagged premium when no TheSportsDB premium key is configured, so users learn why fixtures are empty. |
+| `find_unmatched_streams(group_id=None, reason=None, limit=200)` | Wraps `GET /api/v1/epg/failed-matches` (latest run) and groups failures by source group, attaching each group's enabled custom regexes and stream timezone from `GET /api/v1/groups`, to drive regex tuning. |
+| `check_tsdb_gated_subscriptions()` | Since Teamarr #676 TheSportsDB is premium-key only and the old `is_premium` flag is gone. Lists subscribed leagues whose `provider == "tsdb"` in `GET /api/v1/cache/leagues`, plus the custom-league count, when `settings/display.tsdb_api_key` is unset. |
 
-`find_unmatched_streams` and `list_premium_gated_subscriptions` depend on
-endpoint shapes to be confirmed during implementation against the live
-instance; if an endpoint needed does not exist, the tool is dropped and the
-README says so.
+All endpoint shapes above were confirmed against the live v2.17.0 instance on
+2026-09-15.
 
 ## Configuration
 
@@ -126,7 +124,7 @@ Booleans accept `1/true/yes/on` case-insensitively.
   JSON). This carries the enum lists to the model.
 - Connection errors → tool error naming the configured URL.
 - Startup: if the live spec is unreachable, log a warning and use the vendored
-  spec. If neither is available, exit non-zero with a clear message.
+  spec. If `TEAMARR_OPENAPI_PATH` points at a missing file, exit non-zero.
 
 ## Packaging and delivery
 
