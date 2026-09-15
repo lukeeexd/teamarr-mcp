@@ -115,6 +115,16 @@ Booleans accept `1`, `true`, `yes`, `on` (case-insensitive).
 
 ### Safety
 
+These flags are guardrails for the agent, not access control. They decide which Teamarr
+endpoints become MCP tools; Teamarr's API itself has no authentication, so anything that can
+reach `TEAMARR_URL` can still call every endpoint directly. Protect the Teamarr port with your
+network, not with this server.
+
+Note also that Teamarr's own channel tools do reach into Dispatcharr: `delete_managed_channel`
+removes a Teamarr-managed channel from Dispatcharr. The line drawn here is Teamarr-managed
+channels only; `DELETE /api/v1/channels/dispatcharr/{id}`, which can remove any Dispatcharr
+channel by id, is never exposed.
+
 By default the server hides anything that deletes or resets data: every `DELETE`, both backup
 restore endpoints, `templates/restore-defaults`, `channels/reset`, the match-cache and
 game-data-cache clears, and clearing run history. Set `TEAMARR_MCP_ENABLE_DESTRUCTIVE=true` to
