@@ -51,3 +51,34 @@ async def build_server(settings: Settings, client: httpx2.AsyncClient | None = N
     register_all(mcp, TeamarrApi(client, settings.url), ctx)
     log.info("Registered %d generated + %d curated tools", generated, len(ctx.curated_tool_names))
     return mcp
+
+
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+    import asyncio
+    import sys
+
+    parser = argparse.ArgumentParser(prog="teamarr-mcp", description="MCP server for Teamarr")
+    parser.add_argument("--version", action="store_true", help="print version and exit")
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    if args.version:
+        print(f"teamarr-mcp {__version__}")
+        raise SystemExit(0)
+
+    settings = Settings.from_env()
+    logging.basicConfig(
+        level=settings.log_level,
+        stream=sys.stderr,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+    mcp = asyncio.run(build_server(settings))
+    if settings.transport == "stdio":
+        mcp.run(transport="stdio", show_banner=False)
+    else:
+        mcp.run(
+            transport="http",
+            host=settings.host,
+            port=settings.port,
+            path="/mcp",
+            show_banner=False,
+        )
