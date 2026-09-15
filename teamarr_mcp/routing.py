@@ -18,6 +18,8 @@ ALWAYS_EXCLUDED: list[tuple[str, str]] = [
     ("GET", r"^/api/v1/groups/[^/]+/xmltv$"),
     ("GET", r"^/api/v1/groups/xmltv/combined$"),
     ("GET", r"^/api/v1/epg/generate/stream$"),  # SSE stream
+    # Deletes a channel inside Dispatcharr itself, not a Teamarr-managed one. Never exposed.
+    ("DELETE", r"^/api/v1/channels/dispatcharr/[^/]+$"),
     # Whole-block settings PUTs are replaced by the curated update_settings tool.
     ("PUT", r"^/api/v1/settings/(?!stream-ordering/scopes/)[^/]+(/[^/]+)*$"),
 ]
@@ -52,6 +54,8 @@ def _maps(rules: list[tuple[str, str]], mcp_type: MCPType) -> list[RouteMap]:
 
 def build_route_maps(settings: Settings) -> list[RouteMap]:
     maps = _maps(ALWAYS_EXCLUDED, MCPType.EXCLUDE)
+    # User-supplied regexes (TEAMARR_MCP_EXCLUDE_PATHS) apply to every method.
+    maps += [RouteMap(pattern=p, mcp_type=MCPType.EXCLUDE) for p in settings.exclude_paths]
     if settings.read_only:
         maps.append(
             RouteMap(
