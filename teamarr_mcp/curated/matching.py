@@ -72,8 +72,11 @@ def register(mcp: FastMCP, api: TeamarrApi, ctx: ServerContext) -> None:
                     "streams": streams,
                 }
             )
+        run_id = failed.get("run_id") if isinstance(failed, dict) else None
+        if run_id is None and failures:
+            run_id = failures[0].get("run_id")
         return {
-            "run_id": failed.get("run_id") if isinstance(failed, dict) else None,
+            "run_id": run_id,
             "count": len(failures),
             "by_reason": dict(sorted(Counter(f.get("reason") for f in failures).items())),
             "groups": out_groups,

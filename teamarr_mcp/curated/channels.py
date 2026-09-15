@@ -10,6 +10,14 @@ def _items(payload, key: str) -> list[dict]:
     return payload if isinstance(payload, list) else payload.get(key, [])
 
 
+def _num(value) -> int | None:
+    """Teamarr returns channel numbers as strings; coerce for sorting."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def resolve_template(templates: list[dict], league: str | None, sport: str | None) -> dict | None:
     events = [t for t in templates if t.get("template_type") == "event"]
     for t in events:
@@ -44,7 +52,7 @@ def register(mcp: FastMCP, api: TeamarrApi, ctx: ServerContext) -> None:
             t = resolve_template(templates, ch.get("league"), ch.get("sport"))
             rows.append(
                 {
-                    "channel_number": ch.get("channel_number"),
+                    "channel_number": _num(ch.get("channel_number")),
                     "channel_name": ch.get("channel_name"),
                     "event_name": ch.get("event_name"),
                     "event_date": ch.get("event_date"),
@@ -61,6 +69,7 @@ def register(mcp: FastMCP, api: TeamarrApi, ctx: ServerContext) -> None:
                 }
             )
         rows.sort(key=lambda r: (r["channel_number"] is None, r["channel_number"] or 0))
+
         return {"count": len(rows), "channels": rows}
 
     ctx.curated_tool_names.append("get_event_channels_summary")

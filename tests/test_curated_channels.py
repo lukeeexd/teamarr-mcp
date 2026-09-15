@@ -8,7 +8,7 @@ CHANNELS = {
     "channels": [
         {
             "id": 1,
-            "channel_number": 2003,
+            "channel_number": "2003",
             "channel_name": "MLB 03 | A at B",
             "event_name": "A at B",
             "event_date": "2026-09-15 18:40",
@@ -22,7 +22,7 @@ CHANNELS = {
         },
         {
             "id": 2,
-            "channel_number": 2001,
+            "channel_number": "10",
             "channel_name": "UFC",
             "event_name": "Fight",
             "event_date": "x",
@@ -79,7 +79,7 @@ async def test_summary_joins_groups_and_templates(make_client):
         res = (await c.call_tool("get_event_channels_summary", {})).data
     assert res["count"] == 2
     first, second = res["channels"]
-    assert first["channel_number"] == 2001  # sorted by number
+    assert first["channel_number"] == 10  # numeric sort, not lexicographic ("10" < "2003")
     assert first["group_name"] is None and first["template_name"] is None
     assert second["group_name"] == "MLB" and second["group_stream_count"] == 30
     assert second["template_id"] == 6 and second["template_name"] == "Baseball"

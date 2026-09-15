@@ -6,7 +6,7 @@ from teamarr_mcp.server import build_server
 
 FAILS = {
     "count": 3,
-    "run_id": 137,
+    "run_id": None,  # live Teamarr leaves this null; failures carry it
     "group_id": None,
     "reason_filter": None,
     "failures": [
