@@ -1,0 +1,12 @@
+services:
+  teamarr-mcp:
+    image: ghcr.io/lukeeexd/teamarr-mcp:latest
+    container_name: teamarr-mcp
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      TEAMARR_URL: http://teamarr:9195        # or http://192.168.1.x:9195
+      # TEAMARR_API_KEY: ""                    # only if your Teamarr gains auth
+      TEAMARR_MCP_ENABLE_DESTRUCTIVE: "false"  # deletes, restores, cache clears
+      TEAMARR_MCP_READ_ONLY: "false"           # expose GET tools only
