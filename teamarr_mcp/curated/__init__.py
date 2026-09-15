@@ -20,7 +20,7 @@ class ServerContext:
 
 
 def register_all(mcp: FastMCP, api: TeamarrApi, ctx: ServerContext) -> None:
-    from teamarr_mcp.curated import info
+    from teamarr_mcp.curated import info, settings
 
-    for module in (info,):
+    for module in (info, settings):
         module.register(mcp, api, ctx)
