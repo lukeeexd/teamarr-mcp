@@ -109,6 +109,7 @@ URL of this server.
 | `TEAMARR_MCP_READ_ONLY` | `false` | Expose GET tools only. |
 | `TEAMARR_OPENAPI_PATH` | unset | Load the spec from this file instead of the live instance. |
 | `TEAMARR_MCP_LOG_LEVEL` | `INFO` | Logs go to stderr. |
+| `TEAMARR_MCP_EXCLUDE_PATHS` | unset | Comma-separated regexes; any API path matching one is never exposed, e.g. `^/api/v1/backup,/leagues/custom`. |
 
 Booleans accept `1`, `true`, `yes`, `on` (case-insensitive).
 
@@ -122,8 +123,10 @@ expose them; their descriptions are prefixed `[destructive]`.
 `TEAMARR_MCP_READ_ONLY=true` gives you a browse-only server with GET tools only.
 
 Some routes are never exposed: the support bundle and backup downloads (binary), the XMLTV
-outputs (large documents), the SSE generation log stream, and the raw whole-block settings PUTs
-(use `update_settings`).
+outputs (large documents), the SSE generation log stream, the raw whole-block settings PUTs
+(use `update_settings`), and `DELETE /api/v1/channels/dispatcharr/{id}`, which deletes a channel
+inside Dispatcharr itself rather than a Teamarr-managed one. Block anything else with
+`TEAMARR_MCP_EXCLUDE_PATHS`.
 
 ## Tools
 

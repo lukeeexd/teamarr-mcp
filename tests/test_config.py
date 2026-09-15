@@ -54,3 +54,9 @@ def test_bool_parsing(raw, expected):
 def test_invalid_transport_rejected():
     with pytest.raises(ValueError, match="TEAMARR_MCP_TRANSPORT"):
         Settings.from_env({"TEAMARR_MCP_TRANSPORT": "websocket"})
+
+
+def test_exclude_paths_parsed():
+    assert Settings.from_env({}).exclude_paths == ()
+    s = Settings.from_env({"TEAMARR_MCP_EXCLUDE_PATHS": r"^/api/v1/backup, /support/ ,"})
+    assert s.exclude_paths == (r"^/api/v1/backup", "/support/")

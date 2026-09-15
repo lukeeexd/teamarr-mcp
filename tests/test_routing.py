@@ -64,6 +64,8 @@ async def test_default_flags(vendored_spec):
 async def test_destructive_enabled(vendored_spec):
     tools = await _tool_names(vendored_spec, Settings(enable_destructive=True))
     assert "delete_team" in tools
+    assert "delete_dispatcharr_channel" not in tools  # always excluded, even here
+    assert "delete_managed_channel" in tools
     assert tools["delete_team"].startswith("[destructive]")
     assert "restore_from_backup" in tools
     assert not tools["list_teams"].startswith("[destructive]")
@@ -83,3 +85,12 @@ async def test_counts(vendored_spec):
     full = await _tool_names(vendored_spec, Settings(enable_destructive=True))
     assert len(ro) < len(default) < len(full) <= 225
     assert len(ro) == 113 - 7  # GETs minus the 7 always-excluded GET routes
+
+
+async def test_user_exclude_paths(vendored_spec):
+    tools = await _tool_names(
+        vendored_spec, Settings(exclude_paths=(r"^/api/v1/backup", r"/teams/bulk-"))
+    )
+    assert "list_backups" not in tools and "create_backup" not in tools
+    assert "bulk_import_teams" not in tools
+    assert "list_teams" in tools

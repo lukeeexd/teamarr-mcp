@@ -28,6 +28,7 @@ class Settings:
     read_only: bool = False
     openapi_path: str | None = None
     log_level: str = "INFO"
+    exclude_paths: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Settings:
@@ -48,6 +49,9 @@ class Settings:
             read_only=_bool(e.get("TEAMARR_MCP_READ_ONLY")),
             openapi_path=e.get("TEAMARR_OPENAPI_PATH") or None,
             log_level=e.get("TEAMARR_MCP_LOG_LEVEL", "INFO").strip().upper(),
+            exclude_paths=tuple(
+                s.strip() for s in e.get("TEAMARR_MCP_EXCLUDE_PATHS", "").split(",") if s.strip()
+            ),
         )
 
     @property
