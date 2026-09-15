@@ -71,11 +71,21 @@ def main(argv: list[str] | None = None) -> None:
         stream=sys.stderr,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    mcp = asyncio.run(build_server(settings))
+    asyncio.run(serve(settings))
+
+
+async def serve(settings: Settings) -> None:
+    """Build and serve on ONE event loop.
+
+    The shared httpx2 client pools the connection used to fetch /openapi.json during
+    build_server(). Serving from a second loop (asyncio.run + mcp.run) made the first tool
+    call reuse that socket and fail with "Event loop is closed".
+    """
+    mcp = await build_server(settings)
     if settings.transport == "stdio":
-        mcp.run(transport="stdio", show_banner=False)
+        await mcp.run_async(transport="stdio", show_banner=False)
     else:
-        mcp.run(
+        await mcp.run_async(
             transport="http",
             host=settings.host,
             port=settings.port,
