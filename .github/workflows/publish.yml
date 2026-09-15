@@ -2,13 +2,13 @@ name: Publish
 on:
   push:
     tags: ["v*"]
-permissions:
-  contents: read
-  packages: write
-  id-token: write
+permissions: {}
 jobs:
   ghcr:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -36,6 +36,9 @@ jobs:
   pypi:
     runs-on: ubuntu-latest
     environment: pypi
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5

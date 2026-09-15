@@ -39,7 +39,9 @@ docker run -d --name teamarr-mcp -p 8000:8000 \
   ghcr.io/lukeeexd/teamarr-mcp:latest
 ```
 
-Or use [`docker-compose.example.yml`](docker-compose.example.yml).
+Or use [`docker-compose.example.yml`](docker-compose.example.yml). The MCP endpoint has no
+authentication of its own, so only expose port 8000 to networks you trust; the compose example
+binds to loopback by default.
 
 Connect a client to `http://<host>:8000/mcp`:
 

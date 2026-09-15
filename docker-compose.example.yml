@@ -3,8 +3,10 @@ services:
     image: ghcr.io/lukeeexd/teamarr-mcp:latest
     container_name: teamarr-mcp
     restart: unless-stopped
+    # The MCP endpoint has no authentication. Bound to loopback by default; to let other
+    # machines on your LAN connect, use "8000:8000" and restrict access with your firewall.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       TEAMARR_URL: http://teamarr:9195        # or http://192.168.1.x:9195
       # TEAMARR_API_KEY: ""                    # only if your Teamarr gains auth
