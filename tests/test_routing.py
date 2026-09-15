@@ -65,6 +65,8 @@ async def test_destructive_enabled(vendored_spec):
     tools = await _tool_names(vendored_spec, Settings(enable_destructive=True))
     assert "delete_team" in tools
     assert "delete_dispatcharr_channel" not in tools  # always excluded, even here
+    assert "delete_backup" not in tools  # always excluded, even here
+    assert "protect_backup" in tools and "restore_from_backup" in tools
     assert "delete_managed_channel" in tools
     assert tools["delete_team"].startswith("[destructive]")
     assert "restore_from_backup" in tools

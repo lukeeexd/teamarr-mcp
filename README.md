@@ -124,8 +124,9 @@ expose them; their descriptions are prefixed `[destructive]`.
 
 Some routes are never exposed: the support bundle and backup downloads (binary), the XMLTV
 outputs (large documents), the SSE generation log stream, the raw whole-block settings PUTs
-(use `update_settings`), and `DELETE /api/v1/channels/dispatcharr/{id}`, which deletes a channel
-inside Dispatcharr itself rather than a Teamarr-managed one. Block anything else with
+(use `update_settings`), `DELETE /api/v1/backup/{filename}` (unrecoverable), and
+`DELETE /api/v1/channels/dispatcharr/{id}`, which deletes a channel inside Dispatcharr itself
+rather than a Teamarr-managed one. Block anything else with
 `TEAMARR_MCP_EXCLUDE_PATHS`.
 
 ## Tools

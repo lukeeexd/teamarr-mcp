@@ -20,6 +20,8 @@ ALWAYS_EXCLUDED: list[tuple[str, str]] = [
     ("GET", r"^/api/v1/epg/generate/stream$"),  # SSE stream
     # Deletes a channel inside Dispatcharr itself, not a Teamarr-managed one. Never exposed.
     ("DELETE", r"^/api/v1/channels/dispatcharr/[^/]+$"),
+    # Deleting backup files is unrecoverable; never exposed.
+    ("DELETE", r"^/api/v1/backup/[^/]+$"),
     # Whole-block settings PUTs are replaced by the curated update_settings tool.
     ("PUT", r"^/api/v1/settings/(?!stream-ordering/scopes/)[^/]+(/[^/]+)*$"),
 ]
