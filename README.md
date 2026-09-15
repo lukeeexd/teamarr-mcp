@@ -170,8 +170,8 @@ uv run python scripts/refresh_spec.py http://192.168.1.x:9195       # refresh th
 The `update_settings` round trip was verified against a live Teamarr 2.17.0: a merged PUT of the
 lifecycle block left every field, including `channel_range_start`, unchanged.
 
-Releases are tagged `v*`. CI publishes a multi-arch image to GHCR and the package to PyPI via
-trusted publishing, which requires the GitHub publisher to be registered on pypi.org for the
+Every push to `main` publishes a multi-arch image to GHCR as `:latest` and `:main`. Releases are
+tagged `v*`, which adds version tags and publishes the package to PyPI via trusted publishing, which requires the GitHub publisher to be registered on pypi.org for the
 `teamarr-mcp` project (environment `pypi`) before the first tag.
 
 ## Licence
