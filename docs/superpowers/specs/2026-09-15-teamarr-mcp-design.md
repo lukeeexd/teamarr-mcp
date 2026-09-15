@@ -86,7 +86,7 @@ Two tiers assembled into one FastMCP server.
 ### Curated tier
 
 Hand-written tools in `teamarr_mcp/curated/`, one module each, sharing the
-same httpx client.
+same httpx2 client.
 
 | Tool | Behaviour |
 |---|---|
@@ -129,8 +129,8 @@ Booleans accept `1/true/yes/on` case-insensitively.
 ## Packaging and delivery
 
 - `uv` project, hatchling build, `requires-python >=3.11`,
-  deps `fastmcp>=4,<5`, `httpx>=0.27`. Dev deps: `pytest`, `pytest-asyncio`,
-  `respx`, `ruff`.
+  deps `fastmcp>=4,<5`, `httpx2>=2` (FastMCP 4's OpenAPI provider requires an
+  `httpx2.AsyncClient`; never `httpx`). Dev deps: `pytest`, `pytest-asyncio`, `ruff`.
 - Console script `teamarr-mcp` → `teamarr_mcp.server:main`.
 - Dockerfile: `python:3.12-slim`, `uv` install, non-root user, `EXPOSE 8000`,
   default HTTP transport. `docker-compose.example.yml`.
@@ -149,7 +149,7 @@ Booleans accept `1/true/yes/on` case-insensitively.
 
 ## Testing
 
-- Unit (`respx`): naming uniqueness over the vendored spec; route gating under
+- Unit (`httpx2.MockTransport`): naming uniqueness over the vendored spec; route gating under
   each flag combination (counts and specific tools present/absent); merge
   semantics of `update_settings` including masked password and `replace=True`;
   error mapping preserves `detail`; spec fallback path.
