@@ -18,6 +18,9 @@ OVERRIDES: dict[tuple[str, str], str] = {
     ("PUT", "/api/v1/numbering-exceptions/{exception_id}"): "update_numbering_exception",
     ("DELETE", "/api/v1/numbering-exceptions/{exception_id}"): "delete_numbering_exception",
     ("GET", "/api/v1/dispatcharr/m3u-accounts/{account_id}/groups"): "list_m3u_account_groups",
+    # 2.24: both GET /settings and this route have operationId get_settings.
+    ("GET", "/api/v1/settings/managed-team-channels"): "get_managed_team_channels_settings",
+    ("PUT", "/api/v1/settings/managed-team-channels"): "update_managed_team_channels_settings",
 }
 
 

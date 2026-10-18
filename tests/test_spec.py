@@ -10,8 +10,8 @@ from teamarr_mcp.spec import LoadedSpec, count_operations, load_spec, load_vendo
 def test_vendored_spec_shape():
     spec = load_vendored()
     assert spec["info"]["title"] == "Teamarr API"
-    assert len(spec["paths"]) == 164
-    assert count_operations(spec) == 225
+    assert len(spec["paths"]) == 182
+    assert count_operations(spec) == 245
 
 
 async def test_live_spec_preferred(make_client):
@@ -38,8 +38,8 @@ async def test_falls_back_to_vendored_when_unreachable(make_client):
 
     loaded = await load_spec(Settings(), make_client(handler))
     assert loaded.source == "vendored"
-    assert loaded.version == "2.17.0"
-    assert loaded.operation_count == 225
+    assert loaded.version == "2.24.0"
+    assert loaded.operation_count == 245
 
 
 async def test_falls_back_to_vendored_on_non_200(make_client):

@@ -9,7 +9,7 @@ def _handler(r: httpx2.Request):
     if r.url.path == "/openapi.json":
         raise httpx2.ConnectError("offline")  # force vendored
     if r.url.path == "/health":
-        return httpx2.Response(200, json={"status": "healthy", "version": "2.17.0"})
+        return httpx2.Response(200, json={"status": "healthy", "version": "2.24.0"})
     return httpx2.Response(200, json={})
 
 
@@ -27,10 +27,10 @@ async def test_teamarr_info(make_client):
     async with Client(mcp) as c:
         info = (await c.call_tool("teamarr_info", {})).data
     assert info["teamarr_url"] == "http://t"
-    assert info["teamarr_version"] == "2.17.0"
+    assert info["teamarr_version"] == "2.24.0"
     assert info["health"]["status"] == "healthy"
     assert info["spec_source"] == "vendored"
-    assert info["spec_version"] == "2.17.0"
+    assert info["spec_version"] == "2.24.0"
     assert info["read_only"] is True
     assert info["destructive_enabled"] is False
     assert info["generated_tools"] > 100

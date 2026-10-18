@@ -9,7 +9,7 @@ configuration: teams, event groups, templates, settings, channels and Dispatchar
 **Generated tier.** At startup the server fetches your Teamarr's own `/openapi.json` and turns
 every endpoint into an MCP tool with a clean name (`list_teams`, `get_team`, `patch_team`,
 `sync_lifecycle`, ...). New Teamarr endpoints appear without a new release of this server. If
-Teamarr is unreachable at startup, a vendored copy of the Teamarr 2.17.0 spec is used instead.
+Teamarr is unreachable at startup, a vendored copy of the Teamarr 2.24.0 spec is used instead.
 
 **Curated tier.** Hand-written tools that encode Teamarr API behaviour you would otherwise
 learn the hard way:
@@ -145,13 +145,13 @@ Tool names come from Teamarr's FastAPI route names with the auto-generated path 
 so `list_teams_api_v1_teams_get` becomes `list_teams`. Collisions are resolved explicitly
 (`patch_team` vs `update_team`, `create_detection_keyword` vs `create_keyword`).
 
-Against Teamarr 2.17.0 (225 API operations):
+Against Teamarr 2.24.0 (245 API operations):
 
 | Mode | Tools |
 |---|---|
-| default | 180 (174 generated + 6 curated) |
-| `TEAMARR_MCP_READ_ONLY=true` | 110 |
-| `TEAMARR_MCP_ENABLE_DESTRUCTIVE=true` | 208 |
+| default | 197 (191 generated + 6 curated) |
+| `TEAMARR_MCP_READ_ONLY=true` | 118 |
+| `TEAMARR_MCP_ENABLE_DESTRUCTIVE=true` | 224 |
 
 Run `teamarr_info` to see the live numbers for your instance.
 

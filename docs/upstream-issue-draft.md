@@ -10,7 +10,7 @@ read and change a Teamarr instance's config: https://github.com/lukeeexd/teamarr
 How it works:
 
 - Generated tier: `FastMCP.from_openapi()` over the instance's own `/openapi.json` at startup
-  (falls back to a vendored 2.17.0 spec). New endpoints show up automatically.
+  (falls back to a vendored 2.24.0 spec). New endpoints show up automatically.
 - Curated tier: a few hand-written tools for things the raw API makes easy to get wrong,
   chiefly `update_settings`, a read-merge-write wrapper for `PUT /api/v1/settings/<block>`
   (a partial lifecycle PUT resets `channel_range_start`; a partial Dispatcharr PUT drops
