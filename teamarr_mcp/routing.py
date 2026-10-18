@@ -35,6 +35,7 @@ DESTRUCTIVE: list[tuple[str, str]] = [
     ("POST", r"^/api/v1/groups/cache/clear(-all)?$"),
     ("POST", r"^/api/v1/groups/[^/]+/cache/clear$"),
     ("POST", r"^/api/v1/game-data-cache/clear$"),
+    ("POST", r"^/api/v1/stats/database/compact$"),  # long DB lock, needs free disk
 ]
 
 

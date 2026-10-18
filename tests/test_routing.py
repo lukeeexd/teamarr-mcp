@@ -32,6 +32,7 @@ def test_is_destructive():
     assert is_destructive("POST", "/api/v1/groups/cache/clear-all")
     assert is_destructive("POST", "/api/v1/groups/{group_id}/cache/clear")
     assert is_destructive("POST", "/api/v1/game-data-cache/clear")
+    assert is_destructive("POST", "/api/v1/stats/database/compact")
     assert not is_destructive("POST", "/api/v1/backup/create")
     assert not is_destructive("GET", "/api/v1/teams")
     assert not is_destructive("POST", "/api/v1/channels/sync")
@@ -85,8 +86,8 @@ async def test_counts(vendored_spec):
     default = await _tool_names(vendored_spec, Settings())
     ro = await _tool_names(vendored_spec, Settings(read_only=True))
     full = await _tool_names(vendored_spec, Settings(enable_destructive=True))
-    assert len(ro) < len(default) < len(full) <= 225
-    assert len(ro) == 113 - 7  # GETs minus the 7 always-excluded GET routes
+    assert len(ro) < len(default) < len(full) <= 245
+    assert len(ro) == 121 - 7  # GETs minus the 7 always-excluded GET routes
 
 
 async def test_user_exclude_paths(vendored_spec):

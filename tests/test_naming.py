@@ -55,4 +55,9 @@ def test_known_names(vendored_spec):
         == "delete_numbering_exception"
     )
     assert names["get_lifecycle_settings_api_v1_settings_lifecycle_get"] == "get_lifecycle_settings"
+    assert names["get_settings_api_v1_settings_get"] == "get_settings"
+    assert (
+        names["get_settings_api_v1_settings_managed_team_channels_get"]
+        == "get_managed_team_channels_settings"
+    )
     assert names["health_check_health_get"] == "health_check"

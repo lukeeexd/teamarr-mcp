@@ -3,7 +3,7 @@
  "info": {
   "title": "Teamarr API",
   "description": "Sports EPG generation service",
-  "version": "2.17.0"
+  "version": "2.24.0"
  },
  "paths": {
   "/health": {
@@ -1183,88 +1183,6 @@
     }
    }
   },
-  "/api/v1/groups/stale/suggestions": {
-   "get": {
-    "tags": [
-     "Event Groups"
-    ],
-    "summary": "List Stale Rebind Suggestions",
-    "description": "Re-bind suggestions for stale sources (#450, the rename flywheel).\n\nFor each stale source, scans live M3U-provided Dispatcharr groups that no\nsource is bound to \u2014 scoped to the stale source's own M3U account (a\nrename happens within one playlist) \u2014 and returns the closest name match\nabove the similarity threshold, plus a synthesized name pattern when the\nold/new diff yields a safe one. Soft-empty when Dispatcharr is\nunconfigured or unreachable \u2014 the stale banner must degrade, not error.",
-    "operationId": "list_stale_rebind_suggestions_api_v1_groups_stale_suggestions_get",
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {
-         "items": {
-          "additionalProperties": true,
-          "type": "object"
-         },
-         "type": "array",
-         "title": "Response List Stale Rebind Suggestions Api V1 Groups Stale Suggestions Get"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
-  "/api/v1/groups/{group_id}/rebind": {
-   "post": {
-    "tags": [
-     "Event Groups"
-    ],
-    "summary": "Rebind Group",
-    "description": "Re-bind a stale source to a new Dispatcharr group in one call.\n\nUpdates the pinned group id/name, then clears the stale flag so the\nbanner resolves immediately instead of waiting for the next generation\nrun. The resulting binding mode is deterministic: with ``pattern``,\npattern binding is enabled with it; without, pattern binding is turned\nOFF \u2014 stream fetch gives an enabled pattern precedence over the pinned\nid, so leaving a dead pattern active would keep the source broken.\nNever touches channels \u2014 re-binding is a pure binding update (bpqb.8).",
-    "operationId": "rebind_group_api_v1_groups__group_id__rebind_post",
-    "parameters": [
-     {
-      "name": "group_id",
-      "in": "path",
-      "required": true,
-      "schema": {
-       "type": "integer",
-       "title": "Group Id"
-      }
-     }
-    ],
-    "requestBody": {
-     "required": true,
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/GroupRebindRequest"
-       }
-      }
-     }
-    },
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {
-         "type": "object",
-         "additionalProperties": true,
-         "title": "Response Rebind Group Api V1 Groups  Group Id  Rebind Post"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
   "/api/v1/groups/{group_id}": {
    "get": {
     "tags": [
@@ -1694,7 +1612,7 @@
      "Event Groups"
     ],
     "summary": "Preview Group Name Pattern",
-    "description": "Resolve a group-name pattern against live Dispatcharr M3U groups.\n\nPowers the live \"matches N groups\" preview in the source editor. Only\nM3U-provided groups are considered (same rule as generation-time\nresolution). An invalid regex returns ``valid: false`` rather than an\nerror so the UI can show inline feedback while the user types.",
+    "description": "Resolve a group-name pattern against live Dispatcharr M3U groups.\n\nPowers the live \"matches N groups\" preview in the exception-keyword\nsource editor (a keyword matched by M3U group). Only M3U-provided groups\nare considered. An invalid regex returns ``valid: false`` rather than an\nerror so the UI can show inline feedback while the user types.",
     "operationId": "preview_group_name_pattern_api_v1_groups_dispatcharr_group_pattern_preview_post",
     "requestBody": {
      "content": {
@@ -2955,6 +2873,48 @@
     }
    }
   },
+  "/api/v1/keywords/order": {
+   "put": {
+    "tags": [
+     "Exception Keywords"
+    ],
+    "summary": "Reorder Keywords",
+    "description": "Set the precedence order of exception keywords (#931).\n\nWhen several keywords match one stream by the same kind of evidence, the\none earlier in ``keyword_ids`` wins. An Ignore keyword outranks the others\nwherever it sits, and a pinned stream outranks everything. Keywords left\nout of the list sort after the listed ones, by label. Returns the full\nlist (disabled keywords included) in its new order.",
+    "operationId": "reorder_keywords_api_v1_keywords_order_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExceptionKeywordOrder"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExceptionKeywordListResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/keywords/{keyword_id}": {
    "get": {
     "tags": [
@@ -3120,6 +3080,432 @@
          "type": "object",
          "additionalProperties": true,
          "title": "Response Toggle Keyword Api V1 Keywords  Keyword Id  Enabled Patch"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/race-feeds": {
+   "get": {
+    "tags": [
+     "Race Feeds"
+    ],
+    "summary": "List Feeds",
+    "description": "List race feeds, optionally for one league. Drivers first, then variants.",
+    "operationId": "list_feeds_api_v1_race_feeds_get",
+    "parameters": [
+     {
+      "name": "league",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "League code, e.g. f1",
+       "title": "League"
+      },
+      "description": "League code, e.g. f1"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RaceFeedListResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/race-feeds/{feed_id}": {
+   "patch": {
+    "tags": [
+     "Race Feeds"
+    ],
+    "summary": "Patch Feed",
+    "description": "Change a feed's behavior and/or enabled flag (the user-owned fields).",
+    "operationId": "patch_feed_api_v1_race_feeds__feed_id__patch",
+    "parameters": [
+     {
+      "name": "feed_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Feed Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RaceFeedUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RaceFeedResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/race-feeds/bulk": {
+   "post": {
+    "tags": [
+     "Race Feeds"
+    ],
+    "summary": "Bulk Behavior",
+    "description": "Set one behavior on every driver (or every variant) row of a league.",
+    "operationId": "bulk_behavior_api_v1_race_feeds_bulk_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RaceFeedBulkUpdate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RaceFeedListResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/race-feeds/refresh": {
+   "post": {
+    "tags": [
+     "Race Feeds"
+    ],
+    "summary": "Refresh Feeds",
+    "description": "Re-harvest the roster now (also runs with every cache refresh).",
+    "operationId": "refresh_feeds_api_v1_race_feeds_refresh_post",
+    "parameters": [
+     {
+      "name": "league",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "League code; omit for all",
+       "title": "League"
+      },
+      "description": "League code; omit for all"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RaceFeedListResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/source-discovery/candidates": {
+   "get": {
+    "tags": [
+     "Source Discovery"
+    ],
+    "summary": "List Candidates",
+    "description": "Suggested sources, strongest evidence first.\n\nOnly groups worth suggesting are returned: ones whose streams matched\nevents in the evidence window, team-stream groups, then ones whose name\nalone names a subscribed league. Replay groups are never returned. The\nlist is flat, ordered by M3U account; a group that carries the same events\nas a stronger one says so in ``same_events_as``.\nDismissed groups are left out unless ``include_dismissed`` is set.",
+    "operationId": "list_candidates_api_v1_source_discovery_candidates_get",
+    "parameters": [
+     {
+      "name": "include_dismissed",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Include Dismissed"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CandidateListResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/source-discovery/scan": {
+   "post": {
+    "tags": [
+     "Source Discovery"
+    ],
+    "summary": "Start Scan",
+    "description": "Start a discovery scan in the background. 409 when one is already running.",
+    "operationId": "start_scan_api_v1_source_discovery_scan_post",
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Start Scan Api V1 Source Discovery Scan Post"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/source-discovery/status": {
+   "get": {
+    "tags": [
+     "Source Discovery"
+    ],
+    "summary": "Get Status",
+    "description": "Whether a scan is running, its progress, and the last scan's summary.",
+    "operationId": "get_status_api_v1_source_discovery_status_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Get Status Api V1 Source Discovery Status Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/source-discovery/candidates/{candidate_id}/dismiss": {
+   "post": {
+    "tags": [
+     "Source Discovery"
+    ],
+    "summary": "Dismiss Candidate",
+    "description": "Dismiss a candidate. It is not suggested or scanned again until restored.",
+    "operationId": "dismiss_candidate_api_v1_source_discovery_candidates__candidate_id__dismiss_post",
+    "parameters": [
+     {
+      "name": "candidate_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Candidate Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Dismiss Candidate Api V1 Source Discovery Candidates  Candidate Id  Dismiss Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/source-discovery/candidates/{candidate_id}/restore": {
+   "post": {
+    "tags": [
+     "Source Discovery"
+    ],
+    "summary": "Restore Candidate",
+    "description": "Undo a dismissal.",
+    "operationId": "restore_candidate_api_v1_source_discovery_candidates__candidate_id__restore_post",
+    "parameters": [
+     {
+      "name": "candidate_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Candidate Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Restore Candidate Api V1 Source Discovery Candidates  Candidate Id  Restore Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/source-discovery/candidates/{candidate_id}/accept": {
+   "post": {
+    "tags": [
+     "Source Discovery"
+    ],
+    "summary": "Accept",
+    "description": "Create a managed source from a candidate.\n\nA managed source is disabled when it matches nothing for two weeks and\nre-enabled when its group carries games again; editing it by hand makes\nit an ordinary source that is never touched.",
+    "operationId": "accept_api_v1_source_discovery_candidates__candidate_id__accept_post",
+    "parameters": [
+     {
+      "name": "candidate_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Candidate Id"
+      }
+     }
+    ],
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Accept Api V1 Source Discovery Candidates  Candidate Id  Accept Post"
         }
        }
       }
@@ -5091,6 +5477,166 @@
     }
    }
   },
+  "/api/v1/settings/plex": {
+   "get": {
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Get Plex Settings",
+    "description": "Get Plex integration settings.",
+    "operationId": "get_plex_settings_api_v1_settings_plex_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlexSettingsModel"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Update Plex Settings",
+    "description": "Update Plex integration settings.",
+    "operationId": "update_plex_settings_api_v1_settings_plex_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PlexSettingsUpdate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlexSettingsModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plex/test": {
+   "post": {
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Test Plex Connection",
+    "description": "Test connection to a Plex server.\n\nIf no parameters provided, tests with the first saved server.",
+    "operationId": "test_plex_connection_api_v1_plex_test_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/PlexConnectionTestRequest"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Request"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlexConnectionTestResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plex/dvrs": {
+   "post": {
+    "tags": [
+     "Settings"
+    ],
+    "summary": "List Plex Dvrs",
+    "description": "List DVRs and their HDHomeRun devices, for the device picker.\n\nFalls back to the saved URL/token when not provided. A masked token\n(\"********\") resolves against the saved server matching `url`.\n\nPOST (not GET) so the token never travels in a URL query string \u2014\nunlike `url`, it's a live credential that would otherwise land in\naccess logs and browser history on every keystroke-triggered request.",
+    "operationId": "list_plex_dvrs_api_v1_plex_dvrs_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/PlexConnectionTestRequest"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Request"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlexDvrsResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/settings/lifecycle": {
    "get": {
     "tags": [
@@ -5254,6 +5800,68 @@
          "additionalProperties": true,
          "type": "object",
          "title": "Response Trigger Scheduler Run Api V1 Scheduler Run Post"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/settings/managed-team-channels": {
+   "get": {
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Get Settings",
+    "description": "Get persistent Team EPG channel numbering settings.",
+    "operationId": "get_settings_api_v1_settings_managed_team_channels_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ManagedTeamChannelSettingsModel"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "Settings"
+    ],
+    "summary": "Update Settings",
+    "description": "Update the dedicated range and explicit priority order for Team EPG channels.",
+    "operationId": "update_settings_api_v1_settings_managed_team_channels_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ManagedTeamChannelSettingsUpdate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ManagedTeamChannelSettingsModel"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
         }
        }
       }
@@ -6686,6 +7294,36 @@
     }
    }
   },
+  "/api/v1/numbering-exceptions/segment-codes": {
+   "get": {
+    "tags": [
+     "Numbering Exceptions",
+     "Numbering Exceptions"
+    ],
+    "summary": "Segment Codes",
+    "description": "Segment codes a block's segments condition accepts, by sport.",
+    "operationId": "segment_codes_api_v1_numbering_exceptions_segment_codes_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "items": {
+           "type": "string"
+          },
+          "type": "array"
+         },
+         "type": "object",
+         "title": "Response Segment Codes Api V1 Numbering Exceptions Segment Codes Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/numbering-exceptions/{exception_id}": {
    "put": {
     "tags": [
@@ -6693,7 +7331,7 @@
      "Numbering Exceptions"
     ],
     "summary": "Update",
-    "description": "Update a block's start / end / label / enabled. 400 on a start conflict.",
+    "description": "Update a block's start / end / label / enabled / season, segments and\nkeyword conditions / channel group. 400 on a start conflict, 404 for an\nunknown block, 422 when the new range or a condition is invalid.",
     "operationId": "update_api_v1_numbering_exceptions__exception_id__put",
     "parameters": [
      {
@@ -6970,6 +7608,46 @@
     }
    }
   },
+  "/api/v1/stats/database": {
+   "get": {
+    "tags": [
+     "Stats"
+    ],
+    "summary": "Database Status",
+    "description": "Database file size, reclaimable and live space, free disk on its\nvolume, history row counts and the compaction job state (#906).\nBacks the Run History tile on Settings \u2192 Advanced.",
+    "operationId": "database_status_api_v1_stats_database_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/database/compact": {
+   "post": {
+    "tags": [
+     "Stats"
+    ],
+    "summary": "Compact Database Endpoint",
+    "description": "Start a background VACUUM to return freed pages to the filesystem (#906).\n\nSingle-flight and exclusive with generation: 409 if either is running.\n409 also when the volume has less free space than the compacted file\nneeds (``live_bytes`` vs ``free_disk_bytes`` on GET /database). Poll\nGET /database for progress.",
+    "operationId": "compact_database_endpoint_api_v1_stats_database_compact_post",
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/variables": {
    "get": {
     "tags": [
@@ -7024,14 +7702,42 @@
      "Variables"
     ],
     "summary": "Get Sample Leagues",
-    "description": "Leagues to offer in the template preview selector.\n\nReturns all enabled configured leagues plus the subset the user has\nsubscribed to (event-based sports subscription + the leagues of followed\nteams). The picker shows the subscribed subset by default but can search the\nfull list.",
+    "description": "Leagues to offer in the template preview selector.\n\nReturns every league the app knows \u2014 configured ones and the ones only\ndiscovered from a provider, since those can be subscribed to as well (#993)\n\u2014 plus the subset the user has subscribed to (event-based sports\nsubscription + the leagues of followed teams). The picker shows the\nsubscribed subset by default but can search the full list.\n\nWith ``template_id``, ``default_slug`` names the league that template's\npreview should open on: one it is assigned to or whose teams use it.",
     "operationId": "get_sample_leagues_api_v1_variables_sample_leagues_get",
+    "parameters": [
+     {
+      "name": "template_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Template Id"
+      }
+     }
+    ],
     "responses": {
      "200": {
       "description": "Successful Response",
       "content": {
        "application/json": {
         "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
        }
       }
      }
@@ -7375,6 +8081,33 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/dispatcharr/channel-source-channels": {
+   "get": {
+    "tags": [
+     "Dispatcharr"
+    ],
+    "summary": "List Channel Source Channels",
+    "description": "List the Dispatcharr channels a channel-source scan can read (#971).\n\nThe picker behind the ``dispatcharr_channel`` stream-ordering rule: every\nnon-Teamarr channel in the groups selected under Dispatcharr as a Stream\nSource, or in any group when none is selected (the catch-all row reads\nthem all). Sorted by name.\n\nReturns:\n    List of ``{id, name, channel_number, group_id, group_name}``",
+    "operationId": "list_channel_source_channels_api_v1_dispatcharr_channel_source_channels_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "additionalProperties": true,
+          "type": "object"
+         },
+         "type": "array",
+         "title": "Response List Channel Source Channels Api V1 Dispatcharr Channel Source Channels Get"
         }
        }
       }
@@ -8059,6 +8792,28 @@
     }
    }
   },
+  "/api/v1/league-divisions": {
+   "get": {
+    "tags": [
+     "Subscription"
+    ],
+    "summary": "List League Divisions",
+    "description": "Leagues whose ingest can be narrowed by division, and their divisions (#811).\n\nThe catalog the per-league UI renders from, so division keys live in one\nplace (the ESPN client) rather than being duplicated in the frontend.",
+    "operationId": "list_league_divisions_api_v1_league_divisions_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LeagueDivisionsResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/league-configs": {
    "get": {
     "tags": [
@@ -8087,7 +8842,7 @@
      "Subscription"
     ],
     "summary": "Upsert League Config Endpoint",
-    "description": "Create or update per-league subscription config.",
+    "description": "Create or update per-league subscription config.\n\nA full replace: a field left out is stored as NULL, i.e. \"inherit\".\n``bypass_filter_for_playoffs`` (#881) overrides the playoff / All-Star\nteam-filter bypass for this league: league, then source, then global.\n``channel_create_timing`` / ``channel_pre_buffer_minutes`` (#851) override\nwhen this league's event channels are created; deletion stays global.",
     "operationId": "upsert_league_config_endpoint_api_v1_league_configs__league_code__put",
     "parameters": [
      {
@@ -8889,6 +9644,13 @@
        "servers": []
       }
      },
+     "plex": {
+      "$ref": "#/components/schemas/PlexSettingsModel",
+      "default": {
+       "enabled": false,
+       "servers": []
+      }
+     },
      "proxy": {
       "$ref": "#/components/schemas/ProxySettingsModel",
       "default": {
@@ -9625,6 +10387,17 @@
       ],
       "title": "Epg Match Enabled"
      },
+     "managed": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed"
+     },
      "include_teams": {
       "anyOf": [
        {
@@ -10061,6 +10834,192 @@
     "title": "BulkImportTeam",
     "description": "Team data from cache for bulk import."
    },
+   "CandidateListResponse": {
+    "properties": {
+     "window_days": {
+      "type": "integer",
+      "title": "Window Days"
+     },
+     "candidates": {
+      "items": {
+       "$ref": "#/components/schemas/CandidateResponse"
+      },
+      "type": "array",
+      "title": "Candidates"
+     },
+     "scan": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Scan"
+     }
+    },
+    "type": "object",
+    "required": [
+     "window_days",
+     "candidates",
+     "scan"
+    ],
+    "title": "CandidateListResponse"
+   },
+   "CandidateResponse": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "m3u_group_id": {
+      "type": "integer",
+      "title": "M3U Group Id"
+     },
+     "m3u_group_name": {
+      "type": "string",
+      "title": "M3U Group Name"
+     },
+     "m3u_account_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "M3U Account Ids"
+     },
+     "m3u_account_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "M3U Account Name"
+     },
+     "stream_count": {
+      "type": "integer",
+      "title": "Stream Count"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "tier": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tier"
+     },
+     "name_leagues": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Name Leagues"
+     },
+     "leagues": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Leagues"
+     },
+     "team_leagues": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Team Leagues"
+     },
+     "events": {
+      "type": "integer",
+      "title": "Events"
+     },
+     "best_game_matches": {
+      "type": "integer",
+      "title": "Best Game Matches"
+     },
+     "days_matched": {
+      "type": "integer",
+      "title": "Days Matched"
+     },
+     "evidence_days": {
+      "type": "integer",
+      "title": "Evidence Days"
+     },
+     "auto_hold": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Auto Hold"
+     },
+     "scans": {
+      "type": "integer",
+      "title": "Scans"
+     },
+     "last_seen_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen At"
+     },
+     "last_matched_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Matched At"
+     },
+     "same_events_as": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Same Events As"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "m3u_group_id",
+     "m3u_group_name",
+     "m3u_account_ids",
+     "stream_count",
+     "status",
+     "tier",
+     "name_leagues",
+     "leagues",
+     "team_leagues",
+     "events",
+     "best_game_matches",
+     "days_matched",
+     "evidence_days",
+     "scans",
+     "last_seen_at",
+     "last_matched_at"
+    ],
+    "title": "CandidateResponse"
+   },
    "ChannelNumberingSettingsModel": {
     "properties": {
      "global_channel_mode": {
@@ -10088,6 +11047,11 @@
       "type": "integer",
       "title": "Channel Gap Size",
       "default": 3
+     },
+     "channel_order_mode": {
+      "type": "string",
+      "title": "Channel Order Mode",
+      "default": "sport_league"
      },
      "channel_daily_reset_enabled": {
       "type": "boolean",
@@ -10166,6 +11130,17 @@
        }
       ],
       "title": "Channel Gap Size"
+     },
+     "channel_order_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Order Mode"
      },
      "channel_daily_reset_enabled": {
       "anyOf": [
@@ -10420,6 +11395,16 @@
       "type": "boolean",
       "title": "Stats Refreshed",
       "default": false
+     },
+     "current_event": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/TeamChannelCurrentEvent"
+       },
+       {
+        "type": "null"
+       }
+      ]
      }
     },
     "type": "object",
@@ -11149,6 +12134,39 @@
       ],
       "title": "Subtitle"
      },
+     "program_art_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Program Art Url"
+     },
+     "event_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Channel Logo Url"
+     },
+     "art_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Art Url"
+     },
      "priority": {
       "type": "integer",
       "title": "Priority",
@@ -11168,7 +12186,7 @@
     },
     "type": "object",
     "title": "ConditionalDescriptionEntry",
-    "description": "A conditional row: description, plus optional title/subtitle overrides.\n\n``template`` is the description string (historical name \u2014 it is the\nstored JSON key). ``title``/``subtitle`` (#370 part 2) are optional\nper-field overrides selected independently by the same condition."
+    "description": "A conditional row: description, plus optional title/subtitle/art overrides.\n\n``template`` is the description string (historical name \u2014 it is the\nstored JSON key). ``title``/``subtitle``/``program_art_url`` (#370 part 2)\nare optional per-field overrides selected independently by the same condition."
    },
    "ConnectionTestRequest": {
     "properties": {
@@ -11811,6 +12829,54 @@
       ],
       "title": "Default Channel Group Mode"
      },
+     "untagged_keyword_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Untagged Keyword Label"
+     },
+     "managed_team_channel_profile_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          }
+         ]
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Team Channel Profile Ids"
+     },
+     "managed_team_channel_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Team Channel Group Id"
+     },
+     "managed_team_channel_league_groups": {
+      "type": "boolean",
+      "title": "Managed Team Channel League Groups",
+      "default": false
+     },
      "cleanup_unused_logos": {
       "type": "boolean",
       "title": "Cleanup Unused Logos",
@@ -11931,6 +12997,60 @@
        }
       ],
       "title": "Default Channel Group Mode"
+     },
+     "untagged_keyword_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Untagged Keyword Label"
+     },
+     "managed_team_channel_profile_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          }
+         ]
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Team Channel Profile Ids"
+     },
+     "managed_team_channel_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Team Channel Group Id"
+     },
+     "managed_team_channel_league_groups": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Team Channel League Groups"
      },
      "cleanup_unused_logos": {
       "anyOf": [
@@ -12405,6 +13525,75 @@
    },
    "ExceptionKeywordCreate": {
     "properties": {
+     "m3u_group_pattern": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "M3U Group Pattern",
+      "description": "Regex on the stream's M3U group name (case-insensitive search)"
+     },
+     "m3u_groups": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SourceRef"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "M3U Groups",
+      "description": "Picked Dispatcharr M3U groups"
+     },
+     "stream_pattern": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stream Pattern",
+      "description": "Regex on the stream name (case-insensitive search)"
+     },
+     "streams": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SourceRef"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Streams",
+      "description": "Picked Dispatcharr streams"
+     },
+     "event_group_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Group Ids",
+      "description": "Teamarr event groups whose streams get this keyword"
+     },
      "label": {
       "type": "string",
       "minLength": 1,
@@ -12413,9 +13602,9 @@
      },
      "match_terms": {
       "type": "string",
-      "minLength": 1,
       "title": "Match Terms",
-      "description": "Comma-separated terms/phrases to match in stream names (e.g., 'Spanish, En Espa\u00f1ol, (ESP)')"
+      "description": "Comma-separated terms/phrases to match in stream names (e.g., 'Spanish, En Espa\u00f1ol, (ESP)'); may be empty when another match source is set",
+      "default": ""
      },
      "behavior": {
       "type": "string",
@@ -12436,8 +13625,7 @@
     },
     "type": "object",
     "required": [
-     "label",
-     "match_terms"
+     "label"
     ],
     "title": "ExceptionKeywordCreate",
     "description": "Create exception keyword request."
@@ -12463,6 +13651,24 @@
     ],
     "title": "ExceptionKeywordListResponse",
     "description": "List of exception keywords."
+   },
+   "ExceptionKeywordOrder": {
+    "properties": {
+     "keyword_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "minItems": 1,
+      "title": "Keyword Ids"
+     }
+    },
+    "type": "object",
+    "required": [
+     "keyword_ids"
+    ],
+    "title": "ExceptionKeywordOrder",
+    "description": "Keyword ids in precedence order, highest first (#931)."
    },
    "ExceptionKeywordResponse": {
     "properties": {
@@ -12503,6 +13709,63 @@
        }
       ],
       "title": "Created At"
+     },
+     "m3u_group_pattern": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "M3U Group Pattern"
+     },
+     "m3u_groups": {
+      "items": {
+       "$ref": "#/components/schemas/SourceRef"
+      },
+      "type": "array",
+      "title": "M3U Groups",
+      "default": []
+     },
+     "stream_pattern": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stream Pattern"
+     },
+     "streams": {
+      "items": {
+       "$ref": "#/components/schemas/SourceRef"
+      },
+      "type": "array",
+      "title": "Streams",
+      "default": []
+     },
+     "event_group_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Event Group Ids",
+      "default": []
+     },
+     "sort_order": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sort Order"
      }
     },
     "type": "object",
@@ -12519,6 +13782,75 @@
    },
    "ExceptionKeywordUpdate": {
     "properties": {
+     "m3u_group_pattern": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "M3U Group Pattern",
+      "description": "Regex on the stream's M3U group name (case-insensitive search)"
+     },
+     "m3u_groups": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SourceRef"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "M3U Groups",
+      "description": "Picked Dispatcharr M3U groups"
+     },
+     "stream_pattern": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stream Pattern",
+      "description": "Regex on the stream name (case-insensitive search)"
+     },
+     "streams": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SourceRef"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Streams",
+      "description": "Picked Dispatcharr streams"
+     },
+     "event_group_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Group Ids",
+      "description": "Teamarr event groups whose streams get this keyword"
+     },
      "label": {
       "anyOf": [
        {
@@ -12534,8 +13866,7 @@
      "match_terms": {
       "anyOf": [
        {
-        "type": "string",
-        "minLength": 1
+        "type": "string"
        },
        {
         "type": "null"
@@ -12573,7 +13904,7 @@
     },
     "type": "object",
     "title": "ExceptionKeywordUpdate",
-    "description": "Update exception keyword request."
+    "description": "Update exception keyword request.\n\nOmitted fields are left alone. A match source sent as null or as an\nempty string/list is cleared (#1010): the editor sends null for an\nemptied field, and before this that read as \"not provided\"."
    },
    "ExtractionFieldResult": {
     "properties": {
@@ -12776,6 +14107,11 @@
       "type": "string",
       "title": "Label Style",
       "default": "team_name"
+     },
+     "unlabeled_streams": {
+      "type": "string",
+      "title": "Unlabeled Streams",
+      "default": "separate"
      }
     },
     "type": "object",
@@ -12858,6 +14194,17 @@
        }
       ],
       "title": "Label Style"
+     },
+     "unlabeled_streams": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unlabeled Streams"
      }
     },
     "type": "object",
@@ -13158,22 +14505,6 @@
        }
       ],
       "title": "M3U Account Name"
-     },
-     "m3u_group_name_pattern": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "M3U Group Name Pattern"
-     },
-     "m3u_group_name_pattern_enabled": {
-      "type": "boolean",
-      "title": "M3U Group Name Pattern Enabled",
-      "default": false
      },
      "stream_include_regex": {
       "anyOf": [
@@ -13503,37 +14834,7 @@
      "pattern"
     ],
     "title": "GroupPatternPreviewRequest",
-    "description": "Preview which live M3U groups a name pattern resolves to (#450)."
-   },
-   "GroupRebindRequest": {
-    "properties": {
-     "m3u_group_id": {
-      "type": "integer",
-      "title": "M3U Group Id"
-     },
-     "m3u_group_name": {
-      "type": "string",
-      "title": "M3U Group Name"
-     },
-     "pattern": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Pattern"
-     }
-    },
-    "type": "object",
-    "required": [
-     "m3u_group_id",
-     "m3u_group_name"
-    ],
-    "title": "GroupRebindRequest",
-    "description": "One-click re-bind of a stale source to its renamed Dispatcharr group (#450)."
+    "description": "Preview which live M3U groups a name pattern resolves to."
    },
    "GroupResponse": {
     "properties": {
@@ -13673,22 +14974,6 @@
        }
       ],
       "title": "M3U Account Name"
-     },
-     "m3u_group_name_pattern": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "M3U Group Name Pattern"
-     },
-     "m3u_group_name_pattern_enabled": {
-      "type": "boolean",
-      "title": "M3U Group Name Pattern Enabled",
-      "default": false
      },
      "stream_include_regex": {
       "anyOf": [
@@ -14070,6 +15355,43 @@
        }
       ],
       "title": "Channel Count"
+     },
+     "is_channel_source": {
+      "type": "boolean",
+      "title": "Is Channel Source",
+      "default": false
+     },
+     "managed": {
+      "type": "boolean",
+      "title": "Managed",
+      "default": false
+     },
+     "auto_added_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Auto Added At"
+     },
+     "dispatcharr_channel_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dispatcharr Channel Group Id"
+     },
+     "source_missing": {
+      "type": "boolean",
+      "title": "Source Missing",
+      "default": false
      }
     },
     "type": "object",
@@ -14290,28 +15612,6 @@
        }
       ],
       "title": "M3U Account Name"
-     },
-     "m3u_group_name_pattern": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "M3U Group Name Pattern"
-     },
-     "m3u_group_name_pattern_enabled": {
-      "anyOf": [
-       {
-        "type": "boolean"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "M3U Group Name Pattern Enabled"
      },
      "stream_include_regex": {
       "anyOf": [
@@ -14649,6 +15949,17 @@
       ],
       "title": "Enabled"
      },
+     "managed": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed"
+     },
      "subscription_leagues": {
       "anyOf": [
        {
@@ -14721,11 +16032,6 @@
      "clear_m3u_account_name": {
       "type": "boolean",
       "title": "Clear M3U Account Name",
-      "default": false
-     },
-     "clear_m3u_group_name_pattern": {
-      "type": "boolean",
-      "title": "Clear M3U Group Name Pattern",
       "default": false
      },
      "clear_stream_include_regex": {
@@ -14885,7 +16191,7 @@
     },
     "type": "object",
     "title": "IdleOffseasonContent",
-    "description": "Offseason content settings (no game in 30-day lookahead).\n\nEach field (title, subtitle, description) can be independently enabled\nto override the default idle content when there's no upcoming game."
+    "description": "Idle-state override content settings.\n\nEach field (title, subtitle, description) can be independently enabled\nto override the default idle content when there's no upcoming game."
    },
    "JellyfinConnectionTestRequest": {
     "properties": {
@@ -15196,6 +16502,64 @@
        }
       ],
       "title": "Matchup Order"
+     },
+     "included_divisions": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Included Divisions"
+     },
+     "feed_separation_enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Feed Separation Enabled"
+     },
+     "bypass_filter_for_playoffs": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bypass Filter For Playoffs"
+     },
+     "channel_create_timing": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Create Timing"
+     },
+     "channel_pre_buffer_minutes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Pre Buffer Minutes"
      }
     },
     "type": "object",
@@ -15260,11 +16624,108 @@
        }
       ],
       "title": "Matchup Order"
+     },
+     "included_divisions": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Included Divisions"
+     },
+     "feed_separation_enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Feed Separation Enabled"
+     },
+     "bypass_filter_for_playoffs": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bypass Filter For Playoffs"
+     },
+     "channel_create_timing": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Create Timing"
+     },
+     "channel_pre_buffer_minutes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Pre Buffer Minutes"
      }
     },
     "type": "object",
     "title": "LeagueConfigUpdate",
     "description": "Update per-league subscription config."
+   },
+   "LeagueDivision": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "label"
+    ],
+    "title": "LeagueDivision",
+    "description": "One selectable division of a league's scoreboard fetch (#811)."
+   },
+   "LeagueDivisionsResponse": {
+    "properties": {
+     "divisions": {
+      "additionalProperties": {
+       "items": {
+        "$ref": "#/components/schemas/LeagueDivision"
+       },
+       "type": "array"
+      },
+      "type": "object",
+      "title": "Divisions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "divisions"
+    ],
+    "title": "LeagueDivisionsResponse",
+    "description": "Leagues whose ingest can be narrowed by division, and their divisions."
    },
    "LifecycleSettingsModel": {
     "properties": {
@@ -15287,6 +16748,11 @@
       "type": "integer",
       "title": "Channel Post Buffer Minutes",
       "default": 60
+     },
+     "channel_create_postponed": {
+      "type": "boolean",
+      "title": "Channel Create Postponed",
+      "default": true
      },
      "channel_range_start": {
       "type": "integer",
@@ -15402,6 +16868,26 @@
       "type": "integer",
       "title": "Id"
      },
+     "channel_type": {
+      "type": "string",
+      "enum": [
+       "event",
+       "team"
+      ],
+      "title": "Channel Type",
+      "default": "event"
+     },
+     "team_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Id"
+     },
      "event_epg_group_id": {
       "anyOf": [
        {
@@ -15420,6 +16906,50 @@
      "event_provider": {
       "type": "string",
       "title": "Event Provider"
+     },
+     "plugin_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plugin Id"
+     },
+     "plugin_logical_key": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plugin Logical Key"
+     },
+     "plugin_adoption_key": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plugin Adoption Key"
+     },
+     "plugin_plan_generation": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plugin Plan Generation"
      },
      "tvg_id": {
       "type": "string",
@@ -15621,6 +17151,104 @@
     ],
     "title": "ManagedChannelModel",
     "description": "Managed channel response model."
+   },
+   "ManagedTeamChannelSettingsModel": {
+    "properties": {
+     "range_start": {
+      "type": "integer",
+      "title": "Range Start",
+      "default": 9000
+     },
+     "range_end": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Range End"
+     },
+     "priority_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Priority Ids",
+      "default": []
+     },
+     "lifecycle": {
+      "type": "string",
+      "enum": [
+       "persistent",
+       "game_days"
+      ],
+      "title": "Lifecycle",
+      "default": "persistent"
+     }
+    },
+    "type": "object",
+    "title": "ManagedTeamChannelSettingsModel",
+    "description": "Dedicated numbering settings for persistent Team EPG channels."
+   },
+   "ManagedTeamChannelSettingsUpdate": {
+    "properties": {
+     "range_start": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Range Start"
+     },
+     "range_end": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Range End"
+     },
+     "priority_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "integer"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Priority Ids"
+     },
+     "lifecycle": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "persistent",
+         "game_days"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lifecycle"
+     }
+    },
+    "type": "object",
+    "title": "ManagedTeamChannelSettingsUpdate",
+    "description": "Partial update model for managed Team EPG channel settings."
    },
    "MatchCacheStatsResponse": {
     "properties": {
@@ -15987,6 +17615,64 @@
        }
       ],
       "title": "Team League"
+     },
+     "season_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Season Type"
+     },
+     "segments": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Segments"
+     },
+     "keyword": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Keyword"
+     },
+     "channel_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Group Id"
+     },
+     "channel_group_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Group Mode"
      }
     },
     "type": "object",
@@ -16091,6 +17777,64 @@
       "title": "Enabled",
       "default": true
      },
+     "season_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Season Type"
+     },
+     "segments": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Segments"
+     },
+     "keyword": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Keyword"
+     },
+     "channel_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Group Id"
+     },
+     "channel_group_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Group Mode"
+     },
      "display_name": {
       "anyOf": [
        {
@@ -16175,11 +17919,466 @@
        }
       ],
       "title": "Enabled"
+     },
+     "season_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Season Type"
+     },
+     "set_season_type": {
+      "type": "boolean",
+      "title": "Set Season Type",
+      "default": false
+     },
+     "segments": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Segments"
+     },
+     "set_segments": {
+      "type": "boolean",
+      "title": "Set Segments",
+      "default": false
+     },
+     "keyword": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Keyword"
+     },
+     "set_keyword": {
+      "type": "boolean",
+      "title": "Set Keyword",
+      "default": false
+     },
+     "channel_group_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Group Id"
+     },
+     "channel_group_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Group Mode"
+     },
+     "set_channel_group": {
+      "type": "boolean",
+      "title": "Set Channel Group",
+      "default": false
      }
     },
     "type": "object",
     "title": "NumberingExceptionUpdate",
     "description": "Update a block's range / label / enabled flag (scope is immutable)."
+   },
+   "PlexConnectionTestRequest": {
+    "properties": {
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url",
+      "description": "Override URL (uses saved if not provided)"
+     },
+     "token": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Token",
+      "description": "Override token"
+     }
+    },
+    "type": "object",
+    "title": "PlexConnectionTestRequest",
+    "description": "Request to test Plex connection."
+   },
+   "PlexConnectionTestResponse": {
+    "properties": {
+     "success": {
+      "type": "boolean",
+      "title": "Success"
+     },
+     "dvr_count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dvr Count"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     }
+    },
+    "type": "object",
+    "required": [
+     "success"
+    ],
+    "title": "PlexConnectionTestResponse",
+    "description": "Response from Plex connection test."
+   },
+   "PlexDeviceModel": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "device_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Id"
+     },
+     "uri": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Uri"
+     },
+     "profile_hint": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Profile Hint"
+     },
+     "channel_count": {
+      "type": "integer",
+      "title": "Channel Count",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "required": [
+     "key"
+    ],
+    "title": "PlexDeviceModel",
+    "description": "One HDHomeRun (emulated) device attached to a Plex DVR."
+   },
+   "PlexDvrModel": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "lineup_title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lineup Title"
+     },
+     "devices": {
+      "items": {
+       "$ref": "#/components/schemas/PlexDeviceModel"
+      },
+      "type": "array",
+      "title": "Devices",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "key"
+    ],
+    "title": "PlexDvrModel",
+    "description": "One DVR configured in Plex Live TV, with its devices."
+   },
+   "PlexDvrsResponse": {
+    "properties": {
+     "success": {
+      "type": "boolean",
+      "title": "Success"
+     },
+     "dvrs": {
+      "items": {
+       "$ref": "#/components/schemas/PlexDvrModel"
+      },
+      "type": "array",
+      "title": "Dvrs",
+      "default": []
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     }
+    },
+    "type": "object",
+    "required": [
+     "success"
+    ],
+    "title": "PlexDvrsResponse",
+    "description": "DVR/device discovery response, for the Settings device picker."
+   },
+   "PlexServerModel": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name",
+      "default": ""
+     },
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "token": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Token"
+     },
+     "dvr_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dvr Id"
+     },
+     "device_key": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Key"
+     },
+     "channel_profile_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Profile Id"
+     }
+    },
+    "type": "object",
+    "title": "PlexServerModel",
+    "description": "One Plex Media Server target. The token is masked."
+   },
+   "PlexServerUpdateModel": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name",
+      "default": ""
+     },
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "token": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Token"
+     },
+     "dvr_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dvr Id"
+     },
+     "device_key": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Key"
+     },
+     "channel_profile_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Channel Profile Id"
+     }
+    },
+    "type": "object",
+    "title": "PlexServerUpdateModel",
+    "description": "Update-path twin of PlexServerModel \u2014 NO masking serializer.\n\nSee MediaServerEntryUpdateModel for why: the response model's\nfield_serializer also runs during model_dump(), which would mask a\nfreshly-entered token before merge_masked_servers ever saw it."
+   },
+   "PlexSettingsModel": {
+    "properties": {
+     "enabled": {
+      "type": "boolean",
+      "title": "Enabled",
+      "default": false
+     },
+     "servers": {
+      "items": {
+       "$ref": "#/components/schemas/PlexServerModel"
+      },
+      "type": "array",
+      "title": "Servers",
+      "default": []
+     }
+    },
+    "type": "object",
+    "title": "PlexSettingsModel",
+    "description": "Plex integration settings."
+   },
+   "PlexSettingsUpdate": {
+    "properties": {
+     "enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Enabled"
+     },
+     "servers": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/PlexServerUpdateModel"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Servers"
+     }
+    },
+    "type": "object",
+    "title": "PlexSettingsUpdate",
+    "description": "Update model for Plex settings (all fields optional).\n\n`servers` is full-replace: send the complete list."
    },
    "PostgamePeriod": {
     "properties": {
@@ -16351,6 +18550,47 @@
     ],
     "title": "PreviewGroupResponse",
     "description": "Response from previewing stream matches for a group."
+   },
+   "PreviewProgrammeModel": {
+    "properties": {
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "detail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "title",
+     "reason"
+    ],
+    "title": "PreviewProgrammeModel",
+    "description": "A guide programme that looked like a game and bound nothing (#1026)."
    },
    "PreviewStreamModel": {
     "properties": {
@@ -16535,6 +18775,14 @@
        }
       ],
       "title": "Extracted Tz"
+     },
+     "epg_programmes": {
+      "items": {
+       "$ref": "#/components/schemas/PreviewProgrammeModel"
+      },
+      "type": "array",
+      "title": "Epg Programmes",
+      "default": []
      }
     },
     "type": "object",
@@ -16739,6 +18987,184 @@
     "type": "object",
     "title": "ProxySettingsUpdate",
     "description": "Update model for provider SOCKS5 settings (all fields optional)."
+   },
+   "RaceFeedBulkUpdate": {
+    "properties": {
+     "league": {
+      "type": "string",
+      "title": "League"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "driver",
+       "variant"
+      ],
+      "title": "Kind"
+     },
+     "behavior": {
+      "type": "string",
+      "enum": [
+       "consolidate",
+       "separate",
+       "ignore"
+      ],
+      "title": "Behavior"
+     }
+    },
+    "type": "object",
+    "required": [
+     "league",
+     "kind",
+     "behavior"
+    ],
+    "title": "RaceFeedBulkUpdate"
+   },
+   "RaceFeedListResponse": {
+    "properties": {
+     "league": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "League"
+     },
+     "leagues": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Leagues"
+     },
+     "feeds": {
+      "items": {
+       "$ref": "#/components/schemas/RaceFeedResponse"
+      },
+      "type": "array",
+      "title": "Feeds"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     }
+    },
+    "type": "object",
+    "required": [
+     "league",
+     "leagues",
+     "feeds",
+     "total"
+    ],
+    "title": "RaceFeedListResponse"
+   },
+   "RaceFeedResponse": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "league": {
+      "type": "string",
+      "title": "League"
+     },
+     "feed_key": {
+      "type": "string",
+      "title": "Feed Key"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "match_terms": {
+      "type": "string",
+      "title": "Match Terms"
+     },
+     "match_term_list": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Match Term List"
+     },
+     "behavior": {
+      "type": "string",
+      "title": "Behavior"
+     },
+     "enabled": {
+      "type": "boolean",
+      "title": "Enabled"
+     },
+     "managed": {
+      "type": "boolean",
+      "title": "Managed"
+     },
+     "last_seen": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "league",
+     "feed_key",
+     "kind",
+     "label",
+     "match_terms",
+     "match_term_list",
+     "behavior",
+     "enabled",
+     "managed"
+    ],
+    "title": "RaceFeedResponse"
+   },
+   "RaceFeedUpdate": {
+    "properties": {
+     "behavior": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "consolidate",
+         "separate",
+         "ignore"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Behavior"
+     },
+     "enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Enabled"
+     }
+    },
+    "type": "object",
+    "title": "RaceFeedUpdate"
    },
    "RawStreamModel": {
     "properties": {
@@ -17005,6 +19431,20 @@
       "type": "integer",
       "title": "Channel History Retention Days",
       "default": 90
+     },
+     "run_detail_retention_days": {
+      "type": "integer",
+      "maximum": 365.0,
+      "minimum": 1.0,
+      "title": "Run Detail Retention Days",
+      "default": 7
+     },
+     "run_history_retention_days": {
+      "type": "integer",
+      "maximum": 365.0,
+      "minimum": 1.0,
+      "title": "Run History Retention Days",
+      "default": 30
      }
     },
     "type": "object",
@@ -17264,6 +19704,31 @@
        }
       ],
       "title": "Channel Reset Cron"
+     },
+     "source_discovery_mode": {
+      "type": "string",
+      "title": "Source Discovery Mode",
+      "default": "suggest"
+     },
+     "source_discovery_auto_max_streams": {
+      "type": "integer",
+      "title": "Source Discovery Auto Max Streams",
+      "default": 1000
+     },
+     "source_idle_days": {
+      "type": "integer",
+      "title": "Source Idle Days",
+      "default": 14
+     },
+     "source_gone_days": {
+      "type": "integer",
+      "title": "Source Gone Days",
+      "default": 14
+     },
+     "source_missing_delete_days": {
+      "type": "integer",
+      "title": "Source Missing Delete Days",
+      "default": 0
      }
     },
     "type": "object",
@@ -17315,6 +19780,65 @@
        }
       ],
       "title": "Channel Reset Cron"
+     },
+     "source_discovery_mode": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "off",
+         "suggest"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Discovery Mode"
+     },
+     "source_discovery_auto_max_streams": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Discovery Auto Max Streams"
+     },
+     "source_idle_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Idle Days"
+     },
+     "source_gone_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Gone Days"
+     },
+     "source_missing_delete_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Missing Delete Days"
      }
     },
     "type": "object",
@@ -17503,6 +20027,31 @@
     "title": "SortPriorityReorder",
     "description": "Bulk reorder request."
    },
+   "SourceRef": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id"
+    ],
+    "title": "SourceRef",
+    "description": "A picked M3U group or stream; ``name`` is a display snapshot."
+   },
    "StreamExtractionResult": {
     "properties": {
      "stream_name": {
@@ -17632,6 +20181,12 @@
       "title": "Points",
       "description": "Signed points, summed for score-mode rules",
       "default": 0
+     },
+     "condition": {
+      "type": "string",
+      "title": "Condition",
+      "description": "Optional game condition (#539): '' (always), 'no_local_broadcast', or 'season:preseason|regular|postseason'",
+      "default": ""
      }
     },
     "type": "object",
@@ -17800,6 +20355,11 @@
       "type": "integer",
       "title": "Points",
       "default": 0
+     },
+     "condition": {
+      "type": "string",
+      "title": "Condition",
+      "default": ""
      }
     },
     "type": "object",
@@ -17852,6 +20412,22 @@
        }
       ],
       "title": "Soccer Followed Teams"
+     },
+     "auto_source_leagues": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Auto Source Leagues",
+      "default": []
+     },
+     "auto_source_sports": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Auto Source Sports",
+      "default": []
      },
      "updated_at": {
       "anyOf": [
@@ -17910,6 +20486,34 @@
        }
       ],
       "title": "Soccer Followed Teams"
+     },
+     "auto_source_leagues": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Auto Source Leagues"
+     },
+     "auto_source_sports": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Auto Source Sports"
      }
     },
     "type": "object",
@@ -17999,6 +20603,89 @@
     ],
     "title": "TSDBKeyValidationResponse",
     "description": "Response from TSDB API key validation.\n\nTSDB is premium-key only (#676): validity is the only signal, the old\nis_premium flag is gone."
+   },
+   "TeamChannelCurrentEvent": {
+    "properties": {
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "sub_title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sub Title"
+     },
+     "is_attached": {
+      "type": "boolean",
+      "title": "Is Attached",
+      "default": false
+     },
+     "is_live": {
+      "type": "boolean",
+      "title": "Is Live",
+      "default": false
+     },
+     "start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start"
+     },
+     "stop": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stop"
+     },
+     "attach_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Attach At"
+     },
+     "detach_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detach At"
+     }
+    },
+    "type": "object",
+    "title": "TeamChannelCurrentEvent",
+    "description": "The live programme currently airing on a persistent team channel."
    },
    "TeamChannelStatusDispatcharrChannel": {
     "properties": {
@@ -18170,6 +20857,11 @@
      "dispatcharr_channel": {
       "$ref": "#/components/schemas/TeamChannelStatusDispatcharrChannel"
      },
+     "management": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Management"
+     },
      "next_live_window": {
       "$ref": "#/components/schemas/TeamChannelStatusProgramme"
      },
@@ -18201,6 +20893,7 @@
     "required": [
      "team",
      "dispatcharr_channel",
+     "management",
      "next_live_window",
      "status"
     ],
@@ -18369,6 +21062,37 @@
       "type": "boolean",
       "title": "Active",
       "default": true
+     },
+     "managed_channel_enabled": {
+      "type": "boolean",
+      "title": "Managed Channel Enabled",
+      "default": false
+     },
+     "managed_channel_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Number"
+     },
+     "managed_channel_lifecycle": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "persistent",
+         "game_days"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Lifecycle"
      }
     },
     "type": "object",
@@ -18645,6 +21369,71 @@
       "type": "boolean",
       "title": "Active"
      },
+     "managed_channel_enabled": {
+      "type": "boolean",
+      "title": "Managed Channel Enabled",
+      "default": false
+     },
+     "managed_channel_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Number"
+     },
+     "managed_channel_assigned_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Assigned Number"
+     },
+     "managed_channel_sync_status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Sync Status"
+     },
+     "managed_channel_sync_message": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Sync Message"
+     },
+     "managed_channel_lifecycle": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Lifecycle"
+     },
+     "managed_channel_record": {
+      "type": "boolean",
+      "title": "Managed Channel Record",
+      "default": false
+     },
      "created_at": {
       "type": "string",
       "format": "date-time",
@@ -18767,6 +21556,54 @@
        }
       ],
       "title": "Active"
+     },
+     "managed_channel_enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Enabled"
+     },
+     "managed_channel_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Number"
+     },
+     "managed_channel_lifecycle": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "persistent",
+         "game_days"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Lifecycle"
+     },
+     "managed_channel_record": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Managed Channel Record"
      },
      "primary_league": {
       "anyOf": [
@@ -19031,6 +21868,50 @@
       ],
       "title": "Selected Subtitle Index"
      },
+     "rendered_art_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rendered Art Url"
+     },
+     "selected_art_url_index": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selected Art Url Index"
+     },
+     "rendered_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rendered Channel Logo Url"
+     },
+     "selected_channel_logo_index": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selected Channel Logo Index"
+     },
      "rows": {
       "items": {
        "$ref": "#/components/schemas/ConditionRowTrace"
@@ -19046,7 +21927,7 @@
      "rows"
     ],
     "title": "TemplateConditionalPreview",
-    "description": "Rendered conditional fields plus the per-row selection trace.\n\n``rendered``/``selected_index`` keep their historical description-only\nmeaning; the title/subtitle pairs (#370 part 2) are None when no matching\nrow defines that field."
+    "description": "Rendered conditional fields plus the per-row selection trace.\n\n``rendered``/``selected_index`` keep their historical description-only\nmeaning; the title/subtitle/art pairs (#370 part 2) are None when no matching\nrow defines that field."
    },
    "TemplateCreate": {
     "properties": {
@@ -19359,6 +22240,17 @@
       ],
       "title": "Event Channel Name"
      },
+     "team_channel_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Channel Name"
+     },
      "event_channel_logo_url": {
       "anyOf": [
        {
@@ -19369,6 +22261,17 @@
        }
       ],
       "title": "Event Channel Logo Url"
+     },
+     "team_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Channel Logo Url"
      }
     },
     "type": "object",
@@ -19502,6 +22405,28 @@
        }
       ],
       "title": "Program Art Url"
+     },
+     "event_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Channel Logo Url"
+     },
+     "team_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Channel Logo Url"
      },
      "game_duration_mode": {
       "anyOf": [
@@ -19819,7 +22744,7 @@
       ],
       "title": "Event Channel Name"
      },
-     "event_channel_logo_url": {
+     "team_channel_name": {
       "anyOf": [
        {
         "type": "string"
@@ -19828,7 +22753,7 @@
         "type": "null"
        }
       ],
-      "title": "Event Channel Logo Url"
+      "title": "Team Channel Name"
      }
     },
     "type": "object",
@@ -20054,6 +22979,28 @@
        }
       ],
       "title": "Program Art Url"
+     },
+     "event_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Channel Logo Url"
+     },
+     "team_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Channel Logo Url"
      },
      "game_duration_mode": {
       "anyOf": [
@@ -20481,6 +23428,17 @@
       ],
       "title": "Event Channel Name"
      },
+     "team_channel_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Channel Name"
+     },
      "event_channel_logo_url": {
       "anyOf": [
        {
@@ -20491,6 +23449,17 @@
        }
       ],
       "title": "Event Channel Logo Url"
+     },
+     "team_channel_logo_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Channel Logo Url"
      }
     },
     "type": "object",
